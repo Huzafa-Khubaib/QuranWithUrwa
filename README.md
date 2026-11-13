@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Quran With Urwa
 
-## Getting Started
+Online Quran learning portal — soft pastel claymorphism UI with Next.js (App Router), TypeScript, Tailwind, shadcn/ui, Supabase, and Framer Motion.
 
-First, run the development server:
+Live classes happen on **Google Meet / Zoom**. This app stores links and recordings only.
+
+## Stack
+
+- Next.js App Router + TypeScript
+- Tailwind CSS v4 + shadcn/ui
+- Framer Motion
+- Supabase Auth / Postgres / Storage (clients ready; secrets via env)
+
+## Auth & portals
+
+| Login | Portal |
+| ----- | ------ |
+| `/login/student` | `/student` |
+| `/login/teacher` | `/teacher` |
+| `/login/admin` (hidden) | `/admin` |
+
+### Demo logins (local)
+
+With `DEMO_AUTH=true` in `.env.local` (password for all: `Demo@1234`):
+
+| Portal | Email | URL |
+| ------ | ----- | --- |
+| Admin | `admin@demo.urwa` | `/login/admin` |
+| Teacher | `teacher@demo.urwa` | `/login/teacher` |
+| Student | `student@demo.urwa` | `/login/student` |
+
+- No public signup — admins create users (`createUserAccountAction` + Supabase Admin API)
+- Forgot password: `/forgot-password` → email link → `/reset-password`
+- Middleware blocks wrong roles from `/student`, `/teacher`, `/admin`
+- Auth callback: `/auth/callback`
+
+Set Supabase Auth redirect URL: `{SITE_URL}/auth/callback`
+
+## Getting started
 
 ```bash
+cp .env.example .env.local
+# fill NEXT_PUBLIC_WHATSAPP_NUMBER, Supabase keys, etc.
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Public pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Route       | Description                          |
+| ----------- | ------------------------------------ |
+| `/`         | Home (hero, courses, FAQ, CTA…)      |
+| `/courses`  | Full course list                     |
+| `/fees`     | Plans table + pricing cards          |
+| `/about`    | Mission & values                     |
+| `/contact`  | Form + WhatsApp                      |
+| `/book-demo`| Free demo request (Zod + RHF)        |
+| `/enroll`   | Enrollment request (Zod + RHF)       |
 
-## Learn More
+Sticky WhatsApp float appears on all pages (uses `NEXT_PUBLIC_WHATSAPP_NUMBER`).
 
-To learn more about Next.js, take a look at the following resources:
+## Demo & enroll forms
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Run migrations in order:
+   - `supabase/migrations/001_request_tables.sql`
+   - `supabase/migrations/002_portal_schema_rls.sql` (profiles, classes, quizzes, RLS)
+   - `supabase/migrations/003_question_explanation.sql`
+   - `supabase/migrations/004_admin_fees.sql` (fee tracker + request user link)
+2. Set `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
+3. Set `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `ADMIN_NOTIFICATION_EMAIL`.
+4. Also run `005_teacher_class_students.sql` so teachers can enroll students on their classes.
+   Teachers create student accounts from `/teacher/students` (or a class detail page).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Posts go to `/api/demo-requests` and `/api/enrollment-requests`, insert with status `pending`, notify admin via Resend, and ignore honeypot spam silently.
 
-## Deploy on Vercel
+## Environment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Never hardcode secrets. See `.env.example` for required variables.
